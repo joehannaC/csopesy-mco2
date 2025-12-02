@@ -56,7 +56,7 @@ void ProcessList::displayAll() const {
         return;
     }
 
-    std::cout << "\n=== Process List ===\n";
+    //std::cout << "\n=== Process List ===\n";
     for (const auto &p : processes) {
         std::string stateStr;
         switch (p->getState()) {
@@ -69,12 +69,12 @@ void ProcessList::displayAll() const {
         double memMiB = static_cast<double>(p->getMemoryUsed()) / 1024.0; // KiB -> MiB
         if (memMiB < 0.01) memMiB = 0.01;
 
-        std::cout << "Process Name: " << p->getProcessName()
+        /*std::cout << "Process Name: " << p->getProcessName()
                   << " | PID: " << p->getPid()
                   << " | State: " << stateStr
                   << " | Instruction: " << p->getCurrentLine() << "/" << p->getLineCount()
                   << " | Memory: " << memMiB << " MiB"
-                  << std::endl;
+                  << std::endl;*/
     }
-    std::cout << "====================\n";
+    //std::cout << "====================\n";
 }
