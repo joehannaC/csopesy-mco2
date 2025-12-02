@@ -32,32 +32,25 @@ void setConfig() {
     if (configFile.is_open()) {
         std::string line;
         while (std::getline(configFile, line)) {
-            size_t delimiterPos = line.find(' ');
-            if (delimiterPos != std::string::npos) {
-                std::string key = line.substr(0, delimiterPos);
-                std::string value = line.substr(delimiterPos + 1);
+            size_t delim = line.find(' ');
+            if (delim == std::string::npos) continue;
+            std::string key = line.substr(0, delim);
+            std::string value = line.substr(delim + 1);
 
-                if (key == "num-cpu") numCPUs = std::stoi(value);
-                else if (key == "scheduler") {
-                    if (value.front() == '"' && value.back() == '"')
-                        value = value.substr(1, value.size() - 2);
-                    schedulerType = value;
-                } 
-                else if (key == "quantum-cycles") quantumCycles = std::stoi(value);
-                else if (key == "batch-process-freq") batchProcessFreq = std::stoi(value);
-                else if (key == "min-ins") minInstructions = std::stoi(value);
-                else if (key == "max-ins") maxInstructions = std::stoi(value);
-                else if (key == "delays-per-exec") delaysPerExec = std::stoi(value);
-                else if (key == "max-overall-mem") maxOverallMem = std::stoi(value);
-                else if (key == "mem-per-frame") memPerFrame = std::stoi(value);
-                else if (key == "min-mem-per-proc") minMemPerProc = std::stoi(value);
-                else if (key == "max-mem-per-proc") maxMemPerProc = std::stoi(value);
-            }
+            if (key == "num-cpu") numCPUs = std::stoi(value);
+            else if (key == "scheduler") schedulerType = value.substr(1, value.size()-2); // remove quotes
+            else if (key == "quantum-cycles") quantumCycles = std::stoi(value);
+            else if (key == "batch-process-freq") batchProcessFreq = std::stoi(value);
+            else if (key == "min-ins") minInstructions = std::stoi(value);
+            else if (key == "max-ins") maxInstructions = std::stoi(value);
+            else if (key == "delay-per-exec") delaysPerExec = std::stoi(value);
+            else if (key == "max-overall-mem") maxOverallMem = std::stoi(value);
+            else if (key == "mem-per-frame") memPerFrame = std::stoi(value);
+            else if (key == "min-mem-per-proc") minMemPerProc = std::stoi(value);
+            else if (key == "max-mem-per-proc") maxMemPerProc = std::stoi(value);
         }
         configFile.close();
         std::cout << "Configuration loaded.\n";
-    } else {
-        std::cout << "No config file found. Using default settings.\n";
     }
 
     sched.numCPUs = numCPUs;
@@ -68,6 +61,7 @@ void setConfig() {
     sched.maxInstructions = maxInstructions;
     sched.delaysPerExec = delaysPerExec;
 }
+
 
 void processSMI(const ProcessList& plist, int totalMemoryKiB) {
     int usedMemory = 0;
@@ -236,7 +230,7 @@ int main() {
                 // Read instructions text from user
                 std::cout << "Enter instructions (finish with a blank line):\n";
                 std::string line, instructionsStr;
-                std::getline(std::cin, line); // clear leftover newline
+                std::getline(std::cin, line);
 
                 while (true) {
                     std::getline(std::cin, line);
@@ -326,7 +320,7 @@ int main() {
             sched.schedulerStop();
             std::cout << "Scheduler generator stopped.\n";
             plist = sched.allProcesses;
-            plist.displayAll();
+            //plist.displayAll();
         }
         else if (command == "scheduler-test") {
             sched.allProcesses = plist;
