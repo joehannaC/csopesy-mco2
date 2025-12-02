@@ -75,7 +75,7 @@ void console::handleScreenLS() {
               << cpuUtil << " %\n";
 
     // Running processes
-    std::cout << "Running processes:\n";
+    std::cout << "\nRunning processes:\n";
     for (const auto &p : allProcs) {
         if (p->getState() == ProcessState::RUNNING) {
             // Lock or atomically read the core if needed
