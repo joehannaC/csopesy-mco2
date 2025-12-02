@@ -95,9 +95,9 @@ private:
 
     void pageFault(Process* proc, uint16_t addr, bool isWrite) {
     if (loggingEnabled) {
-        std::cout << "[MEM] Page fault: " << proc->getProcessName()
+        /*std::cout << "[MEM] Page fault: " << proc->getProcessName()
                   << " accessing 0x" << std::hex << addr
-                  << (isWrite ? " for write" : " for read") << std::dec << "\n";
+                  << (isWrite ? " for write" : " for read") << std::dec << "\n";*/
     }
 
     
@@ -114,8 +114,8 @@ private:
         backingStore[victim.processName][victim.address] = victim.value;
 
         if (loggingEnabled) {
-            std::cout << "[MEM] Evicting page: " << victim.processName
-                      << " addr 0x" << std::hex << victim.address << std::dec << "\n";
+            /*std::cout << "[MEM] Evicting page: " << victim.processName
+                      << " addr 0x" << std::hex << victim.address << std::dec << "\n";*/
         }
     }
 
@@ -123,4 +123,5 @@ private:
 }
 
 };
+
 
