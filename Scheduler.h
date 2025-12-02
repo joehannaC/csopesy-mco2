@@ -38,7 +38,7 @@ private:
     std::vector<std::thread> cpuCores;
     std::thread generatorThread;
     std::mutex mtx;
-    std::condition_variable cv;  // for immediate generator stop
+    std::condition_variable cv;
     int processCounter = 1;
 
 public:
@@ -46,69 +46,71 @@ public:
     ~Scheduler() { stop(); }
 
     void schedulerStart() {
-        if (!cpuRunning) {
-            cpuRunning = true;
+    if (!cpuRunning) {
+        cpuRunning = true;
 
-            for (int i = 0; i < numCPUs; ++i) {
-                cpuCores.emplace_back([this, i]() {
-                    while (cpuRunning) {
-                        Process* proc = nullptr;
+        // Start CPU threads
+        for (int i = 0; i < numCPUs; ++i) {
+            cpuCores.emplace_back([this, i]() {
+                while (cpuRunning) {
+                    Process* proc = nullptr;
 
-                        if (schedulerType == "RR" || schedulerType == "rr")
-                            proc = getNextProcessRR();
-                        else
-                            proc = getNextProcessFCFS();
+                    if (schedulerType == "RR" || schedulerType == "rr")
+                        proc = getNextProcessRR();
+                    else
+                        proc = getNextProcessFCFS();
 
-                        if (proc) {
-                            proc->setCurrentCore(i);      // assign core first
-                            while (proc->getState() == ProcessState::RUNNING && cpuRunning) {
-                                proc->executeNextInstruction(i);
-                                activeTicks++;
-
-                                std::cout << "[Core " << i << "] Process " << proc->getProcessName()
-                                        << " executing instruction " << proc->getCurrentLine() + 1
-                                        << "/" << proc->getLineCount()
-                                        << " | State: RUNNING\n";
-
-                                if (delaysPerExec > 0)
-                                    std::this_thread::sleep_for(std::chrono::milliseconds(delaysPerExec));
-                            }
-
-                            if (proc->getState() != ProcessState::FINISHED && cpuRunning) {
-                                std::lock_guard<std::mutex> lock(mtx);
-                                proc->setState(ProcessState::READY);
-                                std::cout << "[Core " << i << "] Process " << proc->getProcessName() 
-                                        << " set back to READY.\n";
-                            } else {
-                                std::cout << "[Core " << i << "] Process " << proc->getProcessName() 
-                                        << " finished execution.\n";
-                            }
-                        } else {
-                            idleTicks++;
-                            std::this_thread::sleep_for(std::chrono::milliseconds(50));
+                    if (proc) {
+                        proc->setCurrentCore(i);
+                        while (proc->getState() == ProcessState::RUNNING && cpuRunning) {
+                            proc->executeNextInstruction(i);
+                            activeTicks++;
+                            if (delaysPerExec > 0)
+                                std::this_thread::sleep_for(std::chrono::milliseconds(delaysPerExec));
                         }
+
+                        if (proc->getState() != ProcessState::FINISHED && cpuRunning) {
+                            std::lock_guard<std::mutex> lock(mtx);
+                            proc->setState(ProcessState::READY);
+                        }
+                    } else {
+                        idleTicks++;
+                        std::this_thread::sleep_for(std::chrono::milliseconds(50));
                     }
-                });
-            }
-
-
-            std::cout << "CPU threads started.\n";
-        }
-
-        if (!generatorRunning) {
-            generatorRunning = true;
-            generatorThread = std::thread([this]() {
-                std::unique_lock<std::mutex> lock(mtx);
-                while (generatorRunning) {
-                    generateRandomProcess();
-                    cv.wait_for(lock, std::chrono::milliseconds(batchProcessFreq), [this]() {
-                        return !generatorRunning.load();
-                    });
                 }
             });
-            std::cout << "Process generator started.\n";
         }
+
+        std::cout << "CPU threads started.\n";
     }
+
+    if (!generatorRunning) {
+        generatorRunning = true;
+
+        
+        {
+            std::lock_guard<std::mutex> lock(mtx);
+            int initialProcs = std::max(4, numCPUs);
+            for (int i = 0; i < initialProcs; ++i)
+                generateRandomProcess();
+        }
+
+        
+        generatorThread = std::thread([this]() {
+            std::unique_lock<std::mutex> lock(mtx);
+            while (generatorRunning) {
+                cv.wait_for(lock, std::chrono::milliseconds(batchProcessFreq), [this]() {
+                    return !generatorRunning.load();
+                });
+                if (!generatorRunning) break;
+                generateRandomProcess();
+            }
+        });
+
+        std::cout << "Process generator started.\n";
+    }
+}
+
 
     void schedulerTest(int fastFreqMs = 100) {
         batchProcessFreq = fastFreqMs;
@@ -226,7 +228,7 @@ private:
         newProc.setState(ProcessState::READY);
         allProcesses.addProcess(newProc);
 
-        std::cout << "Generated process: " << procName << " with " << instrs.size() << " instructions.\n";
+        //std::cout << "Generated process: " << procName << " with " << instrs.size() << " instructions.\n";
         processCounter++;
     }
 };
